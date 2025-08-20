@@ -1,10 +1,10 @@
 # datathon
 
-📊 Price Grading & Scoring Pipeline
+# 📊 Price Grading & Scoring Pipeline
 
 상품의 브랜드 / 카테고리 / 상태를 기준으로 등급화하고, 학습된 회귀 가중치를 기반으로 최종 가격 점수(grade_score)를 만드는 파이프라인입니다.
 
-🔹 1단계: 베이스셋 준비
+## 🔹 1단계: 베이스셋 준비
 설명
 
 이상치(outlier) 제거 후 price > 0 조건으로 데이터 필터링
@@ -23,7 +23,7 @@ df["orig_index"] = df.index
 df["log_price"] = np.log1p(df["price"])
 df["condition_score"] = 6 - df["item_condition_id"].astype(int)
 
-🔹 2단계: 희소 레벨 묶기 (other)
+## 🔹 2단계: 희소 레벨 묶기 (other)
 설명
 
 브랜드/카테고리별로 등장 빈도가 너무 낮은 값들은 통계적으로 신뢰도가 부족 → "other"로 묶음
@@ -41,7 +41,7 @@ df["cat2_grp"]  = lump(df["cat2"], 50)
 # 'other' 제거
 df = df[(df["brand_grp"] != "other") & (df["cat2_grp"] != "other")].copy()
 
-🔹 3단계: 등급화 (분위 기반)
+## 🔹 3단계: 등급화 (분위 기반)
 설명
 
 log_price 기준으로 그룹별 평균을 계산 → 분위(percentile rank)로 등급 나누기
@@ -90,7 +90,7 @@ df = make_grade_pct(df, ["brand_grp"],       out="brand_grade",     k=20, min_n=
 df = make_grade_pct(df, ["cat2_grp"],        out="category_grade",  k=20, min_n=10)
 df = make_grade_pct(df, ["condition_score"], out="condition_grade", k=10, min_n=None)
 
-🔹 4단계: 가중치 학습 → grade_score 계산
+## 🔹 4단계: 가중치 학습 → grade_score 계산
 설명
 
 brand_grade, category_grade, condition_grade → log_price를 설명하는 정도(회귀계수) 학습
@@ -116,21 +116,7 @@ df["grade_score"] = (
     w1*df["brand_grade"] + w2*df["category_grade"] + w3*df["condition_grade"]
 ).astype(float)
 
-🔹 5단계: 원본 데이터와 병합
-설명
 
-원래 인덱스(orig_index)로 되돌려서 data4에 새 변수들 join
-
-코드
-df = df.set_index("orig_index")
-
-cols_to_add = [
-    "log_price", "condition_score",
-    "brand_grp", "cat2_grp",
-    "brand_grade", "category_grade", "condition_grade",
-    "grade_score"
-]
-data4 = data4.join(df[cols_to_add], how="left")
 
 ✅ 최종 생성되는 컬럼
 
